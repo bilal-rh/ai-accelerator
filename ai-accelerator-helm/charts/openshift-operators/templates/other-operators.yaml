@@ -1,0 +1,166 @@
+{{- $operators := .Values.operators | default dict -}}
+{{- if $operators.enabled }}
+
+{{/* Authorino Operator */}}
+{{- $authorino := $operators.authorino | default dict -}}
+{{- if $authorino.enabled }}
+apiVersion: operators.coreos.com/v1alpha1
+kind: Subscription
+metadata:
+  name: authorino-operator
+  namespace: openshift-operators
+  annotations:
+    helm.sh/hook: pre-install,pre-upgrade
+    helm.sh/hook-weight: "5"
+spec:
+  channel: {{ $authorino.version | default "latest" }}
+  installPlanApproval: Automatic
+  name: authorino-operator
+  source: community-operators
+  sourceNamespace: openshift-marketplace
+---
+{{- end }}
+
+{{/* OpenShift Pipelines */}}
+{{- $pipelines := $operators.pipelines | default dict -}}
+{{- if $pipelines.enabled }}
+apiVersion: operators.coreos.com/v1alpha1
+kind: Subscription
+metadata:
+  name: openshift-pipelines-operator
+  namespace: openshift-operators
+  annotations:
+    helm.sh/hook: pre-install,pre-upgrade
+    helm.sh/hook-weight: "5"
+spec:
+  channel: {{ $pipelines.version | default "latest" }}
+  installPlanApproval: Automatic
+  name: openshift-pipelines-operator-rh
+  source: redhat-operators
+  sourceNamespace: openshift-marketplace
+---
+{{- end }}
+
+{{/* OpenShift Serverless */}}
+{{- $serverless := $operators.serverless | default dict -}}
+{{- if $serverless.enabled }}
+apiVersion: operators.coreos.com/v1alpha1
+kind: Subscription
+metadata:
+  name: serverless-operator
+  namespace: openshift-operators
+  annotations:
+    helm.sh/hook: pre-install,pre-upgrade
+    helm.sh/hook-weight: "5"
+spec:
+  channel: {{ $serverless.version | default "stable" }}
+  installPlanApproval: Automatic
+  name: serverless-operator
+  source: redhat-operators
+  sourceNamespace: openshift-marketplace
+---
+{{- end }}
+
+{{/* OpenShift Service Mesh */}}
+{{- $servicemesh := $operators.servicemesh | default dict -}}
+{{- if $servicemesh.enabled }}
+apiVersion: operators.coreos.com/v1alpha1
+kind: Subscription
+metadata:
+  name: servicemeshoperator
+  namespace: openshift-operators
+  annotations:
+    helm.sh/hook: pre-install,pre-upgrade
+    helm.sh/hook-weight: "5"
+spec:
+  channel: {{ $servicemesh.version | default "stable" }}
+  installPlanApproval: Automatic
+  name: servicemeshoperator
+  source: redhat-operators
+  sourceNamespace: openshift-marketplace
+---
+{{- end }}
+
+{{/* GPU Operator */}}
+{{- $gpuOperator := index $operators "gpu-operator" | default dict -}}
+{{- if $gpuOperator.enabled }}
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: nvidia-gpu-operator
+  annotations:
+    helm.sh/resource-policy: keep
+    helm.sh/hook: pre-install,pre-upgrade
+    helm.sh/hook-weight: "1"
+---
+apiVersion: operators.coreos.com/v1
+kind: OperatorGroup
+metadata:
+  name: nvidia-gpu-operator-group
+  namespace: nvidia-gpu-operator
+  annotations:
+    helm.sh/hook: pre-install,pre-upgrade
+    helm.sh/hook-weight: "3"
+spec:
+  targetNamespaces:
+  - nvidia-gpu-operator
+---
+apiVersion: operators.coreos.com/v1alpha1
+kind: Subscription
+metadata:
+  name: gpu-operator-certified
+  namespace: nvidia-gpu-operator
+  annotations:
+    helm.sh/hook: pre-install,pre-upgrade
+    helm.sh/hook-weight: "5"
+spec:
+  channel: {{ $gpuOperator.version | default "v23.9" }}
+  installPlanApproval: Automatic
+  name: gpu-operator-certified
+  source: certified-operators
+  sourceNamespace: openshift-marketplace
+---
+{{- end }}
+
+{{/* Node Feature Discovery */}}
+{{- $nfd := $operators.nfd | default dict -}}
+{{- if $nfd.enabled }}
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: openshift-nfd
+  annotations:
+    helm.sh/resource-policy: keep
+    helm.sh/hook: pre-install,pre-upgrade
+    helm.sh/hook-weight: "1"
+---
+apiVersion: operators.coreos.com/v1
+kind: OperatorGroup
+metadata:
+  name: kernel-module-management
+  namespace: openshift-nfd
+  annotations:
+    helm.sh/hook: pre-install,pre-upgrade
+    helm.sh/hook-weight: "3"
+spec:
+  targetNamespaces:
+  - openshift-nfd
+---
+apiVersion: operators.coreos.com/v1alpha1
+kind: Subscription
+metadata:
+  name: nfd
+  namespace: openshift-nfd
+  annotations:
+    helm.sh/hook: pre-install,pre-upgrade
+    helm.sh/hook-weight: "5"
+spec:
+  channel: {{ $nfd.version | default "stable" }}
+  installPlanApproval: Automatic
+  name: nfd
+  source: redhat-operators
+  sourceNamespace: openshift-marketplace
+---
+{{- end }}
+
+{{- end }} 

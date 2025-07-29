@@ -1,0 +1,31 @@
+# Applications configuration
+applications:
+  # MinIO S3-compatible storage
+  minio:
+    enabled: true
+    namespace: "minio"
+    # Storage configuration
+    storage:
+      size: "20Gi"
+      storageClass: ""  # Use default if empty
+    # MinIO configuration
+    config:
+      accessKey: "minio"
+      secretKey: "minio123"
+      region: "us-east-1"
+    # Service configuration
+    service:
+      type: "ClusterIP"
+      port: 9000
+      consolePort: 9001
+    # Route configuration for OpenShift
+    route:
+      enabled: true
+      api:
+        host: ""  # Auto-generated if empty
+        tls:
+          termination: "edge"
+      console:
+        host: ""  # Auto-generated if empty  
+        tls:
+          termination: "edge" 

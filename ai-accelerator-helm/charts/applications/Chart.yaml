@@ -1,0 +1,6 @@
+apiVersion: v2
+name: applications
+description: Applications for AI/ML workloads (MinIO, etc.)
+type: application
+version: 1.0.0
+appVersion: "1.0.0" 

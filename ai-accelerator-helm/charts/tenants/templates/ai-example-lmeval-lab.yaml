@@ -1,0 +1,73 @@
+{{- $deployment := .Values.deployment | default dict -}}
+{{- $customResourcesEnabled := false -}}
+{{- if hasKey $deployment "customResourcesEnabled" -}}
+  {{- $customResourcesEnabled = $deployment.customResourcesEnabled -}}
+{{- end -}}
+{{- $tenants := .Values.tenants | default dict -}}
+{{- $aiExample := index $tenants "ai-example" | default dict -}}
+{{- $lmeval := $aiExample.lmevalLab | default dict -}}
+{{- if and $tenants.enabled $aiExample.enabled $lmeval.enabled $customResourcesEnabled }}
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ $lmeval.name | default "lmeval-lab" }}-storage
+  namespace: {{ $lmeval.namespace | default "ai-example" }}
+  labels:
+    opendatahub.io/dashboard: "true"
+  annotations:
+    helm.sh/hook: pre-install,pre-upgrade
+    helm.sh/hook-weight: "10"
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: {{ $lmeval.storage | default "10Gi" }}
+---
+apiVersion: kubeflow.org/v1
+kind: Notebook
+metadata:
+  name: {{ $lmeval.name | default "lmeval-lab" }}
+  namespace: {{ $lmeval.namespace | default "ai-example" }}
+  labels:
+    app: {{ $lmeval.name | default "lmeval-lab" }}
+    opendatahub.io/dashboard: "true"
+  annotations:
+    openshift.io/display-name: "LM Evaluation Lab"
+    openshift.io/description: "Language Model Evaluation Laboratory"
+    helm.sh/hook: post-install,post-upgrade
+    helm.sh/hook-weight: "15"
+spec:
+  template:
+    spec:
+      containers:
+      - name: {{ $lmeval.name | default "lmeval-lab" }}
+        image: "quay.io/opendatahub/workbench-images:jupyter-datascience-c9s-py311_2024a_20240301"
+        imagePullPolicy: Always
+        workingDir: /opt/app-root/src
+        env:
+        - name: NOTEBOOK_ARGS
+          value: |
+            --ServerApp.port=8888
+            --ServerApp.token=''
+            --ServerApp.password=''
+            --ServerApp.base_url=/notebook/{{ $lmeval.namespace | default "ai-example" }}/{{ $lmeval.name | default "lmeval-lab" }}
+        ports:
+        - containerPort: 8888
+          name: notebook-port
+          protocol: TCP
+        resources:
+          limits:
+            cpu: "2"
+            memory: 8Gi
+          requests:
+            cpu: "1"
+            memory: 4Gi
+        volumeMounts:
+        - mountPath: /opt/app-root/src
+          name: {{ $lmeval.name | default "lmeval-lab" }}-storage
+      volumes:
+      - name: {{ $lmeval.name | default "lmeval-lab" }}-storage
+        persistentVolumeClaim:
+          claimName: {{ $lmeval.name | default "lmeval-lab" }}-storage
+{{- end }} 

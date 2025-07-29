@@ -1,0 +1,74 @@
+{{- $deployment := .Values.deployment | default dict -}}
+{{- $customResourcesEnabled := false -}}
+{{- if hasKey $deployment "customResourcesEnabled" -}}
+  {{- $customResourcesEnabled = $deployment.customResourcesEnabled -}}
+{{- end -}}
+{{- if and (index .Values.tenants "ai-example" "enabled") (index .Values.tenants "ai-example" "workbenches" "enabled") $customResourcesEnabled }}
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ index .Values.tenants "ai-example" "workbenches" "workbench" "name" }}-storage
+  namespace: {{ (index (index .Values.tenants "ai-example" "namespaces") 0).name }}
+  labels:
+    opendatahub.io/dashboard: "true"
+  annotations:
+    helm.sh/hook: pre-install,pre-upgrade
+    helm.sh/hook-weight: "5"
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: {{ index .Values.tenants "ai-example" "workbenches" "workbench" "storage" }}
+---
+apiVersion: kubeflow.org/v1
+kind: Notebook
+metadata:
+  name: {{ index .Values.tenants "ai-example" "workbenches" "workbench" "name" }}
+  namespace: {{ (index (index .Values.tenants "ai-example" "namespaces") 0).name }}
+  labels:
+    app: {{ index .Values.tenants "ai-example" "workbenches" "workbench" "name" }}
+    opendatahub.io/dashboard: "true"
+  annotations:
+    {{- if index .Values.tenants "ai-example" "workbenches" "workbench" "displayName" }}
+    openshift.io/display-name: {{ index .Values.tenants "ai-example" "workbenches" "workbench" "displayName" | quote }}
+    {{- end }}
+    {{- if index .Values.tenants "ai-example" "workbenches" "workbench" "description" }}
+    openshift.io/description: {{ index .Values.tenants "ai-example" "workbenches" "workbench" "description" | quote }}
+    {{- end }}
+    helm.sh/hook: post-install,post-upgrade
+    helm.sh/hook-weight: "10"
+spec:
+  template:
+    spec:
+      containers:
+      - name: {{ index .Values.tenants "ai-example" "workbenches" "workbench" "name" }}
+        image: {{ index .Values.tenants "ai-example" "workbenches" "workbench" "image" }}
+        imagePullPolicy: Always
+        workingDir: /opt/app-root/src
+        env:
+        - name: NOTEBOOK_ARGS
+          value: |
+            --ServerApp.port=8888
+            --ServerApp.token=''
+            --ServerApp.password=''
+            --ServerApp.base_url=/notebook/{{ (index (index .Values.tenants "ai-example" "namespaces") 0).name }}/{{ index .Values.tenants "ai-example" "workbenches" "workbench" "name" }}
+        ports:
+        - containerPort: 8888
+          name: notebook-port
+          protocol: TCP
+        resources:
+          limits:
+            cpu: "2"
+            memory: 8Gi
+          requests:
+            cpu: "1"
+            memory: 2Gi
+        volumeMounts:
+        - mountPath: /opt/app-root/src
+          name: {{ index .Values.tenants "ai-example" "workbenches" "workbench" "name" }}-storage
+      volumes:
+      - name: {{ index .Values.tenants "ai-example" "workbenches" "workbench" "name" }}-storage
+        persistentVolumeClaim:
+          claimName: {{ index .Values.tenants "ai-example" "workbenches" "workbench" "name" }}-storage
+{{- end }} 

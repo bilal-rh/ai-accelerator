@@ -1,0 +1,73 @@
+{{- $deployment := .Values.deployment | default dict -}}
+{{- $customResourcesEnabled := false -}}
+{{- if hasKey $deployment "customResourcesEnabled" -}}
+  {{- $customResourcesEnabled = $deployment.customResourcesEnabled -}}
+{{- end -}}
+{{- $tenants := .Values.tenants | default dict -}}
+{{- $aiExample := index $tenants "ai-example" | default dict -}}
+{{- $dsp := $aiExample.dataSciencePipelines | default dict -}}
+{{- if and $tenants.enabled $aiExample.enabled $dsp.enabled $customResourcesEnabled }}
+apiVersion: datasciencepipelinesapplications.opendatahub.io/v1alpha1
+kind: DataSciencePipelinesApplication
+metadata:
+  name: {{ $dsp.name | default "default-dspa" }}
+  namespace: {{ $dsp.namespace | default "ai-example-pipelines" }}
+  annotations:
+    helm.sh/hook: post-install,post-upgrade
+    helm.sh/hook-weight: "15"
+spec:
+  apiServer:
+    enableSamplePipeline: false
+    applyTektonCustomResource: true
+    deploy: true
+    enableOauth: true
+    trackArtifacts: true
+    collectMetrics: true
+    autoUpdatePipelineDefaultVersion: true
+    archiveLogs: false
+    terminateStatus: Cancelled
+    enableRoutes: true
+    stripEOF: true
+  persistenceAgent:
+    deploy: true
+    numWorkers: 2
+  scheduledWorkflow:
+    deploy: true
+    cronScheduleTimezone: UTC
+  database:
+    mariaDB:
+      deploy: true
+      pipelineDBName: mlpipeline
+      pvcSize: 20Gi
+      username: mlpipeline
+  objectStorage:
+    minio:
+      deploy: false
+      bucket: {{ $dsp.s3.bucket | default "pipelines" }}
+      endpoint: {{ $dsp.s3.endpoint | default "minio-api.minio.svc.cluster.local:9000" }}
+      s3CredentialsSecret:
+        accessKey: {{ $dsp.s3.accessKey | default "minio" }}
+        secretKey: {{ $dsp.s3.secretKey | default "minio123" }}
+        secretName: "aws-connection-{{ $dsp.name | default "default-dspa" }}"
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: "aws-connection-{{ $dsp.name | default "default-dspa" }}"
+  namespace: {{ $dsp.namespace | default "ai-example-pipelines" }}
+  labels:
+    opendatahub.io/dashboard: "true"
+    opendatahub.io/managed: "true"
+  annotations:
+    opendatahub.io/connection-type: s3
+    openshift.io/display-name: "{{ $dsp.name | default "Pipeline" }} S3 Connection"
+    helm.sh/hook: pre-install,pre-upgrade
+    helm.sh/hook-weight: "10"
+data:
+  AWS_ACCESS_KEY_ID: {{ $dsp.s3.accessKey | default "minio" | b64enc }}
+  AWS_SECRET_ACCESS_KEY: {{ $dsp.s3.secretKey | default "minio123" | b64enc }}
+  AWS_S3_ENDPOINT: {{ $dsp.s3.endpoint | default "minio-api.minio.svc.cluster.local:9000" | b64enc }}
+  AWS_DEFAULT_REGION: {{ "us-east-1" | b64enc }}
+  AWS_S3_BUCKET: {{ $dsp.s3.bucket | default "pipelines" | b64enc }}
+type: Opaque
+{{- end }} 

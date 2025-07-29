@@ -1,0 +1,201 @@
+# Production AI Accelerator deployment
+# Includes all features with production-ready configurations
+
+# Git configuration for production
+global:
+  gitops:
+    repoURL: "https://github.com/your-org/ai-accelerator-configs"
+    targetRevision: "main"
+
+# OpenShift GitOps configuration
+gitops:
+  enabled: true
+
+operators:
+  enabled: true  # Enable all operators for production
+  # All operators enabled for production
+  openshift-ai:
+    enabled: true
+    version: "stable-2.19"
+    namespace: "redhat-ods-operator"
+    # Control whether to create OpenShift AI instances (requires CRDs)
+    createInstances: true
+    subscription:
+      channel: "stable-2.19" 
+      source: "redhat-operators"
+      sourceNamespace: "openshift-marketplace"
+    # OpenShift AI instance configuration
+    instance:
+      # Notebook controller configuration
+      notebookController:
+        notebookNamespace: "redhat-ods-applications"
+      # Monitoring configuration
+      monitoring:
+        managementState: "Managed"
+  authorino:
+    enabled: true
+    version: "stable"
+  pipelines:
+    enabled: true
+    version: "latest"
+  serverless:
+    enabled: true
+    version: "stable"
+  servicemesh:
+    enabled: true
+    version: "stable"
+  gpu-operator:
+    enabled: true  # Enable for production GPU workloads
+    version: "stable"
+  nfd:
+    enabled: true
+    version: "stable"
+
+clusterConfigs:
+  enabled: true
+  userWorkloadMonitoring:
+    enabled: true
+    retention: "30d"  # Longer retention for production
+  autoscaling:
+    enabled: true
+    maxNodesTotal: 20
+    scaleDownDelayAfterAdd: "15m"
+    scaleDownUnneededTime: "15m"
+
+# Production ArgoCD configuration
+argocd:
+  syncPolicy:
+    automated:
+      prune: true  # Enable pruning for production
+      selfHeal: true
+    retry:
+      limit: 10  # More retries for production
+      backoff:
+        duration: "10s"
+        factor: 2
+        maxDuration: "30m" 
+
+# Subchart-specific value sections (required for dependency inheritance)
+openshift-gitops:
+  gitops:
+    enabled: true
+
+openshift-operators:
+  operators:
+    enabled: true
+    openshift-ai:
+      enabled: true
+      version: "stable-2.19"
+      namespace: "redhat-ods-operator"
+      createInstances: true
+      subscription:
+        channel: "stable-2.19" 
+        source: "redhat-operators"
+        sourceNamespace: "openshift-marketplace"
+      instance:
+        notebookController:
+          notebookNamespace: "redhat-ods-applications"
+        monitoring:
+          managementState: "Managed"
+    authorino:
+      enabled: true
+      version: "stable"
+    pipelines:
+      enabled: true
+      version: "latest"
+    serverless:
+      enabled: true
+      version: "stable"
+    servicemesh:
+      enabled: true
+      version: "stable"
+    gpu-operator:
+      enabled: true
+      version: "stable"
+    nfd:
+      enabled: true
+      version: "stable"
+
+cluster-configs:
+  clusterConfigs:
+    enabled: true
+    userWorkloadMonitoring:
+      enabled: true
+      retention: "30d"
+    autoscaling:
+      enabled: true
+      maxNodesTotal: 20
+      scaleDownDelayAfterAdd: "15m"
+      scaleDownUnneededTime: "15m"
+
+applications:
+  applications:
+    enabled: true
+    minio:
+      enabled: true
+      storageSize: "100Gi"
+      storageClass: "gp3-csi"
+      credentials:
+        username: "minio"
+        password: "change-me-in-production"
+      config:
+        region: "us-east-1"
+
+tenants:
+  tenants:
+    enabled: true
+    ai-example:
+      enabled: true
+      namespaces:
+        - name: "ai-example-training"
+          displayName: "AI Example Training"
+          description: "AI/ML training workloads and experiments"
+        - name: "ai-example-lmeval-lab"
+          displayName: "LM Evaluation Lab"
+          description: "Language model evaluation laboratory"
+        - name: "ai-example-single-model-serving"
+          displayName: "AI Single Model Serving"
+          description: "Single model serving workloads"
+          modelmeshEnabled: "false"
+        - name: "ai-example-multi-model-serving"
+          displayName: "AI Multi Model Serving"
+          description: "Multi-model serving workloads"
+          modelmeshEnabled: "true"
+      workbenches:
+        enabled: true
+        workbench:
+          name: "ai-example-workbench"
+          displayName: "AI Example Workbench"
+          description: "Production-grade Jupyter workbench"
+          image: "quay.io/opendatahub/workbench-images:jupyter-datascience-c9s-py311_2024a_20240301"
+          storage: "50Gi"
+      modelServing:
+        tgis:
+          enabled: true
+          modelName: "ai-example-tgis"
+          modelPath: "google/flan-t5-large"
+          runtime: "tgis-runtime"
+        vllm:
+          enabled: true
+          modelName: "ai-example-vllm"
+          modelPath: "microsoft/DialoGPT-large"
+          runtime: "vllm-runtime"
+        multiModel:
+          enabled: true
+          name: "ai-example-multi-model"
+      dataSciencePipelines:
+        enabled: true
+        name: "ai-example-dspa"
+        namespace: "ai-example-training"
+        s3:
+          endpoint: "minio-api.minio.svc.cluster.local:9000"
+          bucket: "ai-example-pipelines"
+          accessKey: "minio"
+          secretKey: "change-me-in-production"
+      lmevalLab:
+        enabled: true
+        name: "lmeval-ai-example"
+        namespace: "ai-example-lmeval-lab"
+        storage: "20Gi"
+    ai-custom-workbenches:
+      enabled: true 

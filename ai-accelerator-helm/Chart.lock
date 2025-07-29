@@ -1,0 +1,18 @@
+dependencies:
+- name: openshift-gitops
+  repository: file://./charts/openshift-gitops
+  version: 1.0.0
+- name: openshift-operators
+  repository: file://./charts/openshift-operators
+  version: 1.0.0
+- name: cluster-configs
+  repository: file://./charts/cluster-configs
+  version: 1.0.0
+- name: applications
+  repository: file://./charts/applications
+  version: 1.0.0
+- name: tenants
+  repository: file://./charts/tenants
+  version: 1.0.0
+digest: sha256:f05ec6262439ea14831f8f79ba38b553469d00939d0d4cf7fd988d8ed698bec5
+generated: "2025-07-27T23:50:40.443536+04:00"

@@ -1,0 +1,31 @@
+# OpenShift GitOps Operator configuration
+operator:
+  enabled: true
+  namespace: "openshift-gitops-operator"
+  
+# GitOps instance configuration  
+instance:
+  enabled: true
+  namespace: "openshift-gitops"
+  
+# ArgoCD Server configuration
+argocd:
+  server:
+    route:
+      enabled: true
+      tls:
+        termination: reencrypt
+        insecureEdgeTerminationPolicy: Redirect
+  
+  # RBAC configuration
+  rbac:
+    policy: |
+      g, system:cluster-admins, role:admin
+      g, cluster-admins, role:admin
+    scopes: '[groups]'
+    
+  # Repositories and credentials
+  repos: []
+  
+  # Projects
+  projects: [] 

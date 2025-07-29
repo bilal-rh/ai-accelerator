@@ -1,0 +1,24 @@
+{{- $clusterConfigs := .Values.clusterConfigs | default dict -}}
+{{- $userWorkloadMonitoring := $clusterConfigs.userWorkloadMonitoring | default dict -}}
+{{- if and $clusterConfigs.enabled $userWorkloadMonitoring.enabled }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: cluster-monitoring-config
+  namespace: openshift-monitoring
+data:
+  config.yaml: |
+    enableUserWorkload: true
+    prometheusK8s:
+      retention: 15d
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: user-workload-monitoring-config
+  namespace: openshift-user-workload-monitoring
+data:
+  config.yaml: |
+    prometheus:
+      retention: 15d
+{{- end }} 

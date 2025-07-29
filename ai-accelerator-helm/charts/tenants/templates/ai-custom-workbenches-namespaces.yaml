@@ -1,0 +1,16 @@
+{{- if index .Values.tenants "ai-custom-workbenches" "enabled" -}}
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: ai-custom-workbenches
+  labels:
+    name: ai-custom-workbenches
+    opendatahub.io/dashboard: "true"
+  annotations:
+    openshift.io/display-name: "AI Custom Workbenches"
+    openshift.io/description: "Custom workbenches for AI/ML development teams"
+    helm.sh/hook: pre-install,pre-upgrade
+    helm.sh/hook-weight: "10"
+    helm.sh/resource-policy: keep
+spec: {}
+{{- end }}

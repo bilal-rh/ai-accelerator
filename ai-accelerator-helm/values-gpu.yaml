@@ -1,0 +1,191 @@
+# GPU-enabled AI Accelerator deployment
+# Optimized for GPU workloads and model serving
+
+operators:
+  enabled: true
+  
+  # GPU operators
+  gpu-operator:
+    enabled: true
+    version: "stable"
+  nfd:
+    enabled: true
+    version: "stable"
+    
+  # Standard operators
+  openshift-ai:
+    enabled: true
+    version: "stable-2.19"
+    createInstances: true
+  authorino:
+    enabled: true
+    version: "stable"
+  pipelines:
+    enabled: true
+    version: "latest"
+  serverless:
+    enabled: true
+    version: "stable"
+  servicemesh:
+    enabled: true
+    version: "stable"
+
+clusterConfigs:
+  enabled: true
+  userWorkloadMonitoring:
+    enabled: true
+    retention: "15d"
+
+# Subchart-specific value sections (required for dependency inheritance)
+openshift-gitops:
+  gitops:
+    enabled: true
+
+openshift-operators:
+  operators:
+    enabled: true
+    openshift-ai:
+      enabled: true
+      version: "stable-2.19"
+      namespace: "redhat-ods-operator"
+      createInstances: true
+      subscription:
+        channel: "stable-2.19" 
+        source: "redhat-operators"
+        sourceNamespace: "openshift-marketplace"
+      instance:
+        notebookController:
+          notebookNamespace: "redhat-ods-applications"
+        monitoring:
+          managementState: "Managed"
+    authorino:
+      enabled: true
+      version: "stable"
+    pipelines:
+      enabled: true
+      version: "latest"
+    serverless:
+      enabled: true
+      version: "stable"
+    servicemesh:
+      enabled: true
+      version: "stable"
+    gpu-operator:
+      enabled: true
+      version: "stable"
+    nfd:
+      enabled: true
+      version: "stable"
+
+cluster-configs:
+  clusterConfigs:
+    enabled: true
+    userWorkloadMonitoring:
+      enabled: true
+      retention: "15d"
+
+applications:
+  applications:
+    enabled: true
+    minio:
+      enabled: true
+      storageSize: "50Gi"  # Larger storage for GPU workloads
+      storageClass: "gp3-csi"
+      credentials:
+        username: "minio"
+        password: "minio123"
+      config:
+        region: "us-east-1"
+
+tenants:
+  tenants:
+    enabled: true
+    ai-example:
+      enabled: true
+      namespaces:
+        - name: "ai-example-training"
+          displayName: "AI Example Training"
+          description: "AI/ML training workloads and experiments"
+        - name: "ai-example-lmeval-lab"
+          displayName: "LM Evaluation Lab"
+          description: "Language model evaluation laboratory"
+        - name: "ai-example-single-model-serving"
+          displayName: "AI Single Model Serving"
+          description: "Single model serving workloads"
+          modelmeshEnabled: "false"
+        - name: "ai-example-multi-model-serving"
+          displayName: "AI Multi Model Serving"
+          description: "Multi-model serving workloads"
+          modelmeshEnabled: "true"
+          
+      workbenches:
+        enabled: true
+        workbench:
+          name: "gpu-workbench"
+          displayName: "GPU AI Workbench"
+          description: "GPU-enabled Jupyter workbench for AI development"
+          image: "quay.io/opendatahub/workbench-images:jupyter-datascience-c9s-py311_2024a_20240301"
+          storage: "20Gi"
+          # GPU-specific resource requests
+          resources:
+            limits:
+              cpu: "4"
+              memory: 16Gi
+              nvidia.com/gpu: 1
+            requests:
+              cpu: "2"
+              memory: 8Gi
+              nvidia.com/gpu: 1
+              
+      modelServing:
+        tgis:
+          enabled: true
+          modelName: "flan-t5-large-gpu"
+          modelPath: "google/flan-t5-large"
+          runtime: "tgis-runtime"
+          # GPU resources for model serving
+          resources:
+            limits:
+              cpu: "4"
+              memory: 16Gi
+              nvidia.com/gpu: 1
+            requests:
+              cpu: "2"
+              memory: 8Gi
+              nvidia.com/gpu: 1
+        vllm:
+          enabled: true
+          modelName: "vllm-gpu-example"
+          modelPath: "microsoft/DialoGPT-medium"
+          runtime: "vllm-runtime"
+          resources:
+            limits:
+              cpu: "4"
+              memory: 16Gi
+              nvidia.com/gpu: 1
+            requests:
+              cpu: "2"
+              memory: 8Gi
+              nvidia.com/gpu: 1
+        multiModel:
+          enabled: true
+          name: "multi-model-server"
+          
+      dataSciencePipelines:
+        enabled: true
+        name: "ai-example-dspa"
+        namespace: "ai-example-training"
+        s3:
+          endpoint: "minio-api.minio.svc.cluster.local:9000"
+          bucket: "ai-example-pipelines"
+          accessKey: "minio"
+          secretKey: "minio123"
+          
+      lmevalLab:
+        enabled: true
+        name: "lmeval-ai-example"
+        namespace: "ai-example-lmeval-lab"
+        storage: "20Gi"
+        
+    ai-custom-workbenches:
+      enabled: true 

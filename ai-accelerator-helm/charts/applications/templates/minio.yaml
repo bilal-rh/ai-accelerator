@@ -1,0 +1,174 @@
+{{- $apps := .Values.applications | default dict -}}
+{{- if $apps.enabled }}
+{{- $minio := index .Values.applications "minio" | default dict -}}
+{{- if $minio.enabled }}
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: minio
+  labels:
+    name: minio
+  annotations:
+    openshift.io/display-name: "MinIO Object Storage"
+    openshift.io/description: "S3-compatible object storage for AI/ML workloads"
+    helm.sh/hook: pre-install,pre-upgrade
+    helm.sh/hook-weight: "5"
+spec: {}
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: minio-credentials
+  namespace: minio
+  annotations:
+    helm.sh/hook: pre-install,pre-upgrade
+    helm.sh/hook-weight: "10"
+type: Opaque
+data:
+  {{- $username := "minio" -}}
+  {{- $password := "minio123" -}}
+  {{- if $minio.credentials -}}
+    {{- if $minio.credentials.username -}}{{- $username = $minio.credentials.username -}}{{- end -}}
+    {{- if $minio.credentials.password -}}{{- $password = $minio.credentials.password -}}{{- end -}}
+  {{- else if $minio.config -}}
+    {{- if $minio.config.accessKey -}}{{- $username = $minio.config.accessKey -}}{{- end -}}
+    {{- if $minio.config.secretKey -}}{{- $password = $minio.config.secretKey -}}{{- end -}}
+  {{- end -}}
+  MINIO_ROOT_USER: {{ $username | b64enc }}
+  MINIO_ROOT_PASSWORD: {{ $password | b64enc }}
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: minio-storage
+  namespace: minio
+  annotations:
+    helm.sh/hook: pre-install,pre-upgrade
+    helm.sh/hook-weight: "10"
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: {{ $minio.storageSize | default "20Gi" }}
+  {{- if $minio.storageClass }}
+  storageClassName: {{ $minio.storageClass }}
+  {{- end }}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: minio
+  namespace: minio
+  annotations:
+    helm.sh/hook: post-install,post-upgrade
+    helm.sh/hook-weight: "15"
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: minio
+  template:
+    metadata:
+      labels:
+        app: minio
+    spec:
+      containers:
+      - name: minio
+        image: quay.io/minio/minio:latest
+        args:
+        - server
+        - /data
+        - --console-address
+        - :9001
+        env:
+        - name: MINIO_ROOT_USER
+          valueFrom:
+            secretKeyRef:
+              name: minio-credentials
+              key: MINIO_ROOT_USER
+        - name: MINIO_ROOT_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: minio-credentials
+              key: MINIO_ROOT_PASSWORD
+        ports:
+        - containerPort: 9000
+          name: api
+        - containerPort: 9001
+          name: console
+        volumeMounts:
+        - name: storage
+          mountPath: /data
+      volumes:
+      - name: storage
+        persistentVolumeClaim:
+          claimName: minio-storage
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: minio-api
+  namespace: minio
+  annotations:
+    helm.sh/hook: post-install,post-upgrade
+    helm.sh/hook-weight: "20"
+spec:
+  selector:
+    app: minio
+  ports:
+  - name: api
+    port: 9000
+    targetPort: 9000
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: minio-console
+  namespace: minio
+  annotations:
+    helm.sh/hook: post-install,post-upgrade
+    helm.sh/hook-weight: "20"
+spec:
+  selector:
+    app: minio
+  ports:
+  - name: console
+    port: 9001
+    targetPort: 9001
+---
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  name: minio-api
+  namespace: minio
+  annotations:
+    helm.sh/hook: post-install,post-upgrade
+    helm.sh/hook-weight: "25"
+spec:
+  to:
+    kind: Service
+    name: minio-api
+  port:
+    targetPort: api
+  tls:
+    termination: edge
+---
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  name: minio-console
+  namespace: minio
+  annotations:
+    helm.sh/hook: post-install,post-upgrade
+    helm.sh/hook-weight: "25"
+spec:
+  to:
+    kind: Service
+    name: minio-console
+  port:
+    targetPort: console
+  tls:
+    termination: edge
+{{- end }}
+{{- end }}

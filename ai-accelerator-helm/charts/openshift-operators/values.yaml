@@ -1,0 +1,80 @@
+# Operator configurations
+operators:
+  # OpenShift AI (RHOAI)
+  openshift-ai:
+    enabled: true
+    namespace: "redhat-ods-operator"
+    subscription:
+      channel: "stable-2.19"
+      source: "redhat-operators"
+      sourceNamespace: "openshift-marketplace"
+    instance:
+      enabled: true
+      monitoring:
+        managementState: "Managed"
+      notebookController:
+        notebookNamespace: "rhods-notebooks"
+        
+  # Authorino Operator
+  authorino:
+    enabled: true
+    namespace: "openshift-operators"
+    subscription:
+      channel: "tech-preview-v1"
+      source: "redhat-operators"
+      sourceNamespace: "openshift-marketplace"
+      
+  # OpenShift Pipelines
+  pipelines:
+    enabled: true
+    namespace: "openshift-operators"
+    subscription:
+      channel: "latest"
+      source: "redhat-operators"
+      sourceNamespace: "openshift-marketplace"
+      
+  # OpenShift Serverless
+  serverless:
+    enabled: true
+    namespace: "openshift-operators"
+    subscription:
+      channel: "stable"
+      source: "redhat-operators"
+      sourceNamespace: "openshift-marketplace"
+    instance:
+      enabled: true
+      knativeServing:
+        namespace: "knative-serving"
+      knativeEventing:
+        namespace: "knative-eventing"
+        
+  # OpenShift Service Mesh
+  servicemesh:
+    enabled: true
+    namespace: "openshift-operators"
+    subscription:
+      channel: "stable"
+      source: "redhat-operators"
+      sourceNamespace: "openshift-marketplace"
+      
+  # GPU Operator (optional)
+  gpu-operator:
+    enabled: false
+    namespace: "nvidia-gpu-operator"
+    subscription:
+      channel: "v24.6"
+      source: "certified-operators"
+      sourceNamespace: "openshift-marketplace"
+    instance:
+      enabled: false
+      
+  # Node Feature Discovery (optional)
+  nfd:
+    enabled: false
+    namespace: "openshift-nfd"
+    subscription:
+      channel: "stable"
+      source: "redhat-operators"
+      sourceNamespace: "openshift-marketplace"
+    instance:
+      enabled: false 

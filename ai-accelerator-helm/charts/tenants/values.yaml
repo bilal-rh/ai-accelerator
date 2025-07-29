@@ -1,0 +1,64 @@
+# Tenant configurations
+tenants:
+  # AI Example tenant with comprehensive ML capabilities
+  ai-example:
+    enabled: true
+    namespaces:
+      - name: "ai-example"
+        displayName: "AI Example"
+        description: "AI/ML workloads and experiments"
+      - name: "ai-example-pipelines"
+        displayName: "AI Example Pipelines"
+        description: "Data Science Pipelines for AI workloads"
+    
+    # Workbenches configuration
+    workbenches:
+      enabled: true
+      workbench:
+        name: "ai-workbench"
+        displayName: "AI Workbench"
+        description: "Jupyter workbench for AI development"
+        image: "quay.io/opendatahub/workbench-images:jupyter-datascience-c9s-py311_2024a_20240301"
+        storage: "10Gi"
+        
+    # Model serving configurations
+    modelServing:
+      # Text Generation Inference Server (TGIS)
+      tgis:
+        enabled: true
+        modelName: "flan-t5-small-hf"
+        modelPath: "google/flan-t5-small"
+        runtime: "tgis-runtime"
+        
+      # vLLM serving
+      vllm:
+        enabled: true
+        modelName: "vllm-example"
+        modelPath: "facebook/opt-125m"
+        runtime: "vllm-runtime"
+        
+      # Multi-model serving
+      multiModel:
+        enabled: true
+        name: "multi-model-server"
+        
+    # Data Science Pipelines
+    dataSciencePipelines:
+      enabled: true
+      name: "ai-example-pipelines"
+      s3:
+        endpoint: "minio-api.minio.svc.cluster.local:9000"
+        bucket: "pipelines"
+        
+    # LM Evaluation Lab
+    lmevalLab:
+      enabled: true
+      name: "lmeval-lab"
+      
+  # Custom workbenches tenant
+  ai-custom-workbenches:
+    enabled: false
+    namespaces:
+      - name: "custom-workbenches"
+        displayName: "Custom Workbenches"
+        description: "Custom AI/ML workbenches" 

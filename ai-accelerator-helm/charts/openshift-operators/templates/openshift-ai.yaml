@@ -1,0 +1,35 @@
+{{- $operators := .Values.operators | default dict -}}
+{{- if $operators.enabled }}
+{{- if index .Values.operators "openshift-ai" "enabled" }}
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: redhat-ods-operator
+  labels:
+    name: redhat-ods-operator
+  annotations:
+    helm.sh/resource-policy: keep
+---
+apiVersion: operators.coreos.com/v1
+kind: OperatorGroup
+metadata:
+  name: rhods-operator
+  namespace: redhat-ods-operator
+  annotations:
+    helm.sh/resource-policy: keep
+spec:
+  upgradeStrategy: Default
+---
+apiVersion: operators.coreos.com/v1alpha1
+kind: Subscription
+metadata:
+  name: rhods-operator
+  namespace: redhat-ods-operator
+spec:
+  channel: {{ index .Values.operators "openshift-ai" "version" }}
+  installPlanApproval: Automatic
+  name: rhods-operator
+  source: redhat-operators
+  sourceNamespace: openshift-marketplace
+{{- end }}
+{{- end }} 

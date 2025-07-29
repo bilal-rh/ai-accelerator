@@ -1,0 +1,190 @@
+# Global configuration
+global:
+  # OpenShift cluster domain (will be auto-detected if empty)
+  clusterDomain: ""
+  # Default storage class (will use cluster default if empty)
+  storageClass: ""
+
+# Deployment phases control
+deployment:
+  # Phase 1: Install operators and basic resources
+  operatorsOnly: false
+  # Phase 2: Install custom resources that depend on CRDs
+  customResourcesEnabled: false
+
+# OpenShift GitOps configuration
+gitops:
+  enabled: true
+  # ArgoCD instance configuration
+  argocd:
+    # Default admin password (change in production)
+    adminPassword: "admin123"
+    # Server configuration
+    server:
+      insecure: true
+      # Additional server configuration can be added here
+    
+# Operators configuration
+operators:
+  enabled: true
+  
+  # OpenShift AI (RHOAI) operator
+  openshift-ai:
+    enabled: true
+    version: "stable-2.19"
+    namespace: "redhat-ods-operator"
+    # Control whether to create OpenShift AI instances (requires CRDs)
+    createInstances: false
+    subscription:
+      channel: "stable-2.19" 
+      source: "redhat-operators"
+      sourceNamespace: "openshift-marketplace"
+    instance:
+      enabled: true
+      notebookController:
+        notebookNamespace: "rhods-notebooks"
+      monitoring:
+        managementState: "Managed"
+  
+  # Authorino operator for API security
+  authorino:
+    enabled: true
+    version: "stable"
+    
+  # OpenShift Pipelines
+  pipelines:
+    enabled: true
+    version: "latest"
+    
+  # OpenShift Serverless
+  serverless:
+    enabled: true
+    version: "stable"
+    
+  # OpenShift Service Mesh
+  servicemesh:
+    enabled: true
+    version: "stable"
+    
+  # GPU Operator (for GPU-enabled clusters)
+  gpu-operator:
+    enabled: false
+    version: "stable"
+    
+  # Node Feature Discovery (required for GPU operator)
+  nfd:
+    enabled: false
+    version: "stable"
+
+# Cluster-level configurations
+clusterConfigs:
+  enabled: true
+  
+  # User workload monitoring
+  userWorkloadMonitoring:
+    enabled: true
+
+# Applications
+applications:
+  enabled: true
+  
+  # MinIO object storage
+  minio:
+    enabled: true
+    storageSize: "20Gi"
+    # MinIO credentials (change in production)
+    credentials:
+      username: "minio"
+      password: "minio123"
+
+# Tenant configurations
+tenants:
+  enabled: true
+  
+  # AI example tenant
+  ai-example:
+    enabled: true
+    namespaces:
+      - name: "ai-example"
+        displayName: "AI Example"
+        description: "AI/ML workloads and experiments"
+      - name: "ai-example-pipelines"
+        displayName: "AI Example Pipelines"
+        description: "Data Science Pipelines for AI workloads"
+    
+    # Jupyter workbenches
+    workbenches:
+      enabled: true
+      workbench:
+        name: "example-workbench"
+        displayName: "Example AI Workbench"
+        description: "Jupyter workbench for AI development"
+        image: "quay.io/opendatahub/workbench-images:jupyter-datascience-c9s-py311_2024a_20240301"
+        storage: "10Gi"
+    
+    # Data Science Pipelines
+    dataSciencePipelines:
+      enabled: true
+      name: "ai-example-pipelines"
+      namespace: "ai-example-pipelines"
+      s3:
+        endpoint: "minio-api.minio.svc.cluster.local:9000"
+        bucket: "pipelines"
+        accessKey: "minio"
+        secretKey: "minio123"
+        
+    # Model serving
+    modelServing:
+      tgis:
+        enabled: true
+        modelName: "flan-t5-small-hf"
+        modelPath: "google/flan-t5-small"
+        runtime: "tgis-runtime"
+      vllm:
+        enabled: true
+        modelName: "vllm-example"
+        modelPath: "microsoft/DialoGPT-medium"
+        runtime: "vllm-runtime"
+      multiModel:
+        enabled: true
+        name: "multi-model-server"
+        
+    # LM Evaluation Lab
+    lmevalLab:
+      enabled: true
+      name: "lmeval-lab"
+      namespace: "ai-example"
+      storage: "10Gi"
+  
+  # AI custom workbenches tenant
+  ai-custom-workbenches:
+    enabled: false
+    namespaces:
+      - name: "ai-custom-workbenches"
+        displayName: "AI Custom Workbenches"
+        description: "Custom AI workbench configurations"
+
+# ArgoCD configuration
+argocd:
+  # Sync policy for applications
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      - PrunePropagationPolicy=foreground
+      - PruneLast=true
+      
+  # ArgoCD projects
+  projects:
+    - name: "ai-accelerator"
+      description: "AI Accelerator applications and configurations"
+      sourceRepos:
+        - "*"
+      destinations:
+        - namespace: "*"
+          server: "https://kubernetes.default.svc"
+      clusterResourceWhitelist:
+        - group: "*"
+          kind: "*" 

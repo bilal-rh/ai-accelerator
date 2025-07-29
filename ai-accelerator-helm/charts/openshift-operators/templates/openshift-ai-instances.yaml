@@ -1,0 +1,52 @@
+{{- $deployment := .Values.deployment | default dict -}}
+{{- $operators := .Values.operators | default dict -}}
+{{- $openShiftAI := index .Values.operators "openshift-ai" | default dict -}}
+{{- $createInstances := false -}}
+{{- if hasKey $openShiftAI "createInstances" -}}
+  {{- $createInstances = $openShiftAI.createInstances -}}
+{{- end -}}
+{{- if and $operators.enabled (index .Values.operators "openshift-ai" "enabled") $createInstances }}
+apiVersion: dscinitialization.opendatahub.io/v1
+kind: DSCInitialization
+metadata:
+  name: default-dsci
+  annotations:
+    helm.sh/hook: post-install,post-upgrade
+    helm.sh/hook-weight: "10"
+spec:
+  applicationsNamespace: {{ index .Values.operators "openshift-ai" "instance" "notebookController" "notebookNamespace" }}
+  monitoring:
+    managementState: {{ index .Values.operators "openshift-ai" "instance" "monitoring" "managementState" }}
+  serviceMesh:
+    managementState: Managed
+---
+apiVersion: datasciencecluster.opendatahub.io/v1
+kind: DataScienceCluster
+metadata:
+  name: default-dsc
+  annotations:
+    helm.sh/hook: post-install,post-upgrade
+    helm.sh/hook-weight: "15"
+spec:
+  components:
+    codeflare:
+      managementState: Managed
+    kueue:
+      managementState: Managed
+    workbenches:
+      managementState: Managed
+    modelmeshserving:
+      managementState: Managed
+    kserve:
+      managementState: Managed
+    dashboard:
+      managementState: Managed
+    datasciencepipelines:
+      managementState: Managed
+    ray:
+      managementState: Managed
+    trustyai:
+      managementState: Removed
+    modelregistry:
+      managementState: Managed
+{{- end }} 

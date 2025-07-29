@@ -1,0 +1,13 @@
+# Cluster configurations
+clusterConfigs:
+  # User workload monitoring
+  userWorkloadMonitoring:
+    enabled: true
+    retention: "15d"
+    
+  # Autoscaling (optional)  
+  autoscaling:
+    enabled: false
+    maxNodesTotal: 10
+    scaleDownDelayAfterAdd: "10m"
+    scaleDownUnneededTime: "10m" 

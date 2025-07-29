@@ -1,0 +1,95 @@
+{{- $deployment := .Values.deployment | default dict -}}
+{{- $customResourcesEnabled := false -}}
+{{- if hasKey $deployment "customResourcesEnabled" -}}
+  {{- $customResourcesEnabled = $deployment.customResourcesEnabled -}}
+{{- end -}}
+{{- if and (index .Values.tenants "ai-example" "enabled") (index .Values.tenants "ai-example" "modelServing" "tgis" "enabled") $customResourcesEnabled }}
+apiVersion: serving.kserve.io/v1beta1
+kind: InferenceService
+metadata:
+  name: {{ index .Values.tenants "ai-example" "modelServing" "tgis" "modelName" }}
+  namespace: {{ (index (index .Values.tenants "ai-example" "namespaces") 0).name }}
+  labels:
+    opendatahub.io/dashboard: "true"
+  annotations:
+    serving.knative.openshift.io/enablePassthrough: "true"
+    sidecar.istio.io/inject: "true"
+    sidecar.istio.io/rewriteAppHTTPProbers: "true"
+spec:
+  predictor:
+    model:
+      modelFormat:
+        name: "huggingface"
+      runtime: {{ index .Values.tenants "ai-example" "modelServing" "tgis" "runtime" }}
+      storage:
+        key: "huggingface"
+        path: {{ index .Values.tenants "ai-example" "modelServing" "tgis" "modelPath" }}
+      resources:
+        limits:
+          cpu: "2"
+          memory: 4Gi
+        requests:
+          cpu: "1"
+          memory: 2Gi
+{{- end }}
+
+{{- if and (index .Values.tenants "ai-example" "enabled") (index .Values.tenants "ai-example" "modelServing" "vllm" "enabled") $customResourcesEnabled }}
+---
+apiVersion: serving.kserve.io/v1beta1
+kind: InferenceService
+metadata:
+  name: {{ index .Values.tenants "ai-example" "modelServing" "vllm" "modelName" }}
+  namespace: {{ (index (index .Values.tenants "ai-example" "namespaces") 0).name }}
+  labels:
+    opendatahub.io/dashboard: "true"
+  annotations:
+    serving.knative.openshift.io/enablePassthrough: "true"
+    sidecar.istio.io/inject: "true"
+    sidecar.istio.io/rewriteAppHTTPProbers: "true"
+spec:
+  predictor:
+    model:
+      modelFormat:
+        name: "huggingface"
+      runtime: {{ index .Values.tenants "ai-example" "modelServing" "vllm" "runtime" }}
+      storage:
+        key: "huggingface"
+        path: {{ index .Values.tenants "ai-example" "modelServing" "vllm" "modelPath" }}
+      resources:
+        limits:
+          cpu: "2"
+          memory: 4Gi
+        requests:
+          cpu: "1"
+          memory: 2Gi
+{{- end }}
+
+{{- if and (index .Values.tenants "ai-example" "enabled") (index .Values.tenants "ai-example" "modelServing" "multiModel" "enabled") $customResourcesEnabled }}
+---
+apiVersion: serving.kserve.io/v1alpha1
+kind: ServingRuntime
+metadata:
+  name: {{ index .Values.tenants "ai-example" "modelServing" "multiModel" "name" }}
+  namespace: {{ (index (index .Values.tenants "ai-example" "namespaces") 0).name }}
+  labels:
+    opendatahub.io/dashboard: "true"
+spec:
+  supportedModelFormats:
+  - name: sklearn
+    version: "1"
+    autoSelect: true
+  - name: onnx
+    version: "1"
+    autoSelect: true
+  containers:
+  - name: kserve-container
+    image: kserve/sklearnserver:latest
+    resources:
+      limits:
+        cpu: "1"
+        memory: 2Gi
+      requests:
+        cpu: 500m
+        memory: 1Gi
+  multiModel: true
+{{- end }} 
